@@ -1,6 +1,7 @@
 import nltk
 import sys
 
+
 TERMINALS = """
 Adj -> "country" | "dreadful" | "enigmatical" | "little" | "moist" | "red"
 Adv -> "down" | "here" | "never"
@@ -15,7 +16,10 @@ V -> "smiled" | "tell" | "were"
 """
 
 NONTERMINALS = """
-S -> N V
+S -> NP VP | S Conj S | NP VP Conj VP
+NP -> N | P NP | NP NP | Det NP | NP Adv | AP NP
+VP -> V | VP NP | Adv VP | VP Adv
+AP -> Adj | Adj AP
 """
 
 grammar = nltk.CFG.fromstring(NONTERMINALS + TERMINALS)
@@ -62,7 +66,24 @@ def preprocess(sentence):
     and removing any word that does not contain at least one alphabetic
     character.
     """
-    raise NotImplementedError
+    #convert sentence to list of words with tokenize
+    words = nltk.tokenize.wordpunct_tokenize(sentence.lower())
+
+    #exclude words without at least one alphabetic character
+    for word in words:
+        contains_alphabetic = False
+
+        #loop through letters and see if one is alpha.
+        for letter in word:
+            if letter.isalpha():
+                contains_alphabetic = True
+
+        #remove word if no alphabetic
+        if contains_alphabetic == False:
+            words.remove(word)
+
+    #return words.
+    return words
 
 
 def np_chunk(tree):
@@ -72,7 +93,22 @@ def np_chunk(tree):
     whose label is "NP" that does not itself contain any other
     noun phrases as subtrees.
     """
-    raise NotImplementedError
+    chunks = list()
+    checked_subtrees = list()
+
+    #loop through tree
+    for i in range(tree.height()):
+        for subtree in tree.subtrees(lambda tree: tree.height() == i):
+
+            #check if subtree is NP
+            if subtree.label() == "NP":
+
+                #check if new NP already has an intersection with already checked NPs. if not -> add tree
+                if not (set(checked_subtrees).intersection(set(subtree.leaves()))):
+                    chunks.append(subtree)
+                checked_subtrees = checked_subtrees + subtree.leaves()
+
+    return chunks
 
 
 if __name__ == "__main__":
